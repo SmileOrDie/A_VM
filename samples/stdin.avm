@@ -1,0 +1,8 @@
+;lol
+push
+push int32(3)
+add int32(2)
+assert int32(5)
+dump
+;
+exit
