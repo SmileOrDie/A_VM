@@ -18,5 +18,6 @@
 # include <AssertEmpty.hpp>
 # include <PrintEmpty.hpp>
 # include <MathError.hpp>
+# include <InvalidFile.hpp>
 
 #endif

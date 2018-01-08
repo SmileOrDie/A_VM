@@ -25,7 +25,8 @@ FILES	=	main.cpp					\
 			error/ExtraArgument.cpp		\
 			error/AssertEmpty.cpp		\
 			error/PrintEmpty.cpp		\
-			error/MathError.cpp
+			error/MathError.cpp			\
+			error/InvalidFile.cpp
 
 INC		=	-I ./includes -I ./srcs/exceptions -I ./srcs/error -I ./srcs/type
 CCFLAGS	=	-std=c++11 -Wall -Wextra -Werror

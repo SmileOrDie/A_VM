@@ -184,7 +184,7 @@ bool            execute(const std::string cmd, const std::string value, std::vec
     return (true);
 }
 
-bool parseLine(const std::string line, std::vector<IOperand const *> *stack, int line_p)
+bool parseLine(std::string line, std::vector<IOperand const *> *stack, int line_p)
 {
     std::string cmd = "";
     std::string value = "";
@@ -192,8 +192,10 @@ bool parseLine(const std::string line, std::vector<IOperand const *> *stack, int
     int len;
 
     len = line.length();
-    // if (line[len - 1]== '\n')
-        // line[len - 1] = '\0' ;
+    if (line[len - 1] != ')')
+        line[len - 1] = '\0' ;
+
+    // std::cerr << line << len <<std::endl;
     if ((pos = line.find("add")) != -1 ||
         (pos = line.find("sub")) != -1 ||
         (pos = line.find("mul")) != -1 ||
@@ -210,12 +212,14 @@ bool parseLine(const std::string line, std::vector<IOperand const *> *stack, int
         cmd = line.substr(pos, line.find(" "));
         value = line.substr(line.find(" ") + 1);
     }
-    else if ((pos = line.find(";")) == 0 || line.empty())
+    else if ((pos = line.find(";")) == 0 || line.empty() || (len - 1) == 0)
         return (true);
+    else
+        return (false);
     return (execute(cmd, value, stack, line_p, line));
 }
 
-void                inject_file(void)
+bool                inject_file(void)
 {
     std::string                     strOneLine;
     int                             pos;
@@ -227,14 +231,13 @@ void                inject_file(void)
         if ((pos = strOneLine.find(";;")) != -1)
         {
             if (!(parseLine(strOneLine, &stack, line_p)))
-                break;
+                return (false);
         }
-        else
-            break;
     }
+    return (true);
 }
 
-void                get_file_contents(const char *filename)
+bool                get_file_contents(const char *filename)
 {
     std::vector<IOperand const *>   stack;
     std::string                     strOneLine;
@@ -250,10 +253,10 @@ void                get_file_contents(const char *filename)
                 break;
             line_p++;
         }
-        inFile.close();       
+        inFile.close();
+        return(true);
     }
-    else
-        std::cerr << "Error :  Invalid file"<< std::endl;
+    throw InvalidFile();
 }
 
 int                 main(int argc, char const *argv[])
@@ -265,7 +268,14 @@ int                 main(int argc, char const *argv[])
     }
     else if (argc != 2)
         inject_file();
-    else
-        get_file_contents(argv[1]);
+    else{
+        try {
+            return (get_file_contents(argv[1]));
+        }
+        catch ( const std::exception& e ) {
+            std::cerr << e.what() << std::endl;
+        }
+    }
+        // get_file_contents(argv[1]);
     return 0;
 }
