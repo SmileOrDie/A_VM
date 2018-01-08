@@ -15,11 +15,22 @@
 
 #include <Int8.hpp>
 
-eOperandType    wichType(const std::string type)
+eOperandType    wichType(const std::string type, const std::string line)
 {
     eOperandType    ret = MAX_TYPE;
     int             pos;
-
+    std::string     value;
+ 
+    if (type.empty())
+    {
+        throw MissingArgument(line);
+        return (ret);        
+    }
+    // if ((pos = type.find(")")) != type.length())
+    // {
+    //     throw ExtraArgument();
+    //     return (ret);  
+    // }
     ret = ((pos = type.find("int8")) != -1) ? INT8 :  ret;
     ret = ((ret == MAX_TYPE) && ((pos = type.find("int16")) != -1)) ? INT16 :  ret;
     ret = ((ret == MAX_TYPE) && ((pos = type.find("int32")) != -1)) ? INT32 :  ret;
@@ -28,7 +39,7 @@ eOperandType    wichType(const std::string type)
     return (ret);
 }
 
-bool            execute(const std::string cmd, const std::string value, std::vector<IOperand const *> *stack, int line)
+bool            execute(const std::string cmd, const std::string value, std::vector<IOperand const *> *stack, int line, const std::string l_p)
 {
     eOperandType                        t;
     int                                 size_types[5];
@@ -36,7 +47,7 @@ bool            execute(const std::string cmd, const std::string value, std::vec
     IOperand const *                    b;
     std::string                         sa;
     std::string                         sb;
-    size_t                              id = 1;
+    static size_t                       id = 1;
     char                                buffer[8];
     long long int                       cmd_hex;
 
@@ -54,7 +65,8 @@ bool            execute(const std::string cmd, const std::string value, std::vec
         {
             case PUSH_HEX:
             {
-                if ((t = wichType(value)) >= MAX_TYPE)
+                t = wichType(value, l_p);
+                if (t >= MAX_TYPE)
                     exit (0);
                 (*stack).push_back(Factory::instance()->createOperand(t, value.substr(size_types[t], value.size() - 1)));
                 break ;
@@ -77,7 +89,7 @@ bool            execute(const std::string cmd, const std::string value, std::vec
             {
                 if ((*stack).empty())
                     throw AssertEmpty();
-                if ((t = wichType(value)) >= MAX_TYPE)
+                if ((t = wichType(value, l_p)) >= MAX_TYPE)
                     throw Type();
                 a = Factory::instance()->createOperand(t, value.substr(size_types[t], value.size() - 1));
                 sa = a->toString();
@@ -160,23 +172,28 @@ bool            execute(const std::string cmd, const std::string value, std::vec
             case EXIT_HEX:
                 return (true);
             default:
-                throw Instruction(wichType(value));
+                throw Instruction(wichType(value, l_p));
         }
         ++id;
     }
     catch ( const std::exception& e ) 
     {  
-        std::cerr << "Line " << line << " -> Instruction " << id << " : " << e.what() << std::endl;
+        std::cerr << line << " -> Instruction " << id << " : " << e.what() << std::endl;
+        // return (false);
     }
     return (true);
 }
 
-bool parseLine(std::string line, std::vector<IOperand const *> *stack, int line_p)
+bool parseLine(const std::string line, std::vector<IOperand const *> *stack, int line_p)
 {
     std::string cmd = "";
     std::string value = "";
     int pos;
+    int len;
 
+    len = line.length();
+    // if (line[len - 1]== '\n')
+        // line[len - 1] = '\0' ;
     if ((pos = line.find("add")) != -1 ||
         (pos = line.find("sub")) != -1 ||
         (pos = line.find("mul")) != -1 ||
@@ -195,7 +212,7 @@ bool parseLine(std::string line, std::vector<IOperand const *> *stack, int line_
     }
     else if ((pos = line.find(";")) == 0 || line.empty())
         return (true);
-    return (execute(cmd, value, stack, line_p));
+    return (execute(cmd, value, stack, line_p, line));
 }
 
 void                inject_file(void)
@@ -203,13 +220,17 @@ void                inject_file(void)
     std::string                     strOneLine;
     int                             pos;
     std::vector<IOperand const *>   stack;
-    int                             line_p = 0;
+    int                             line_p = 1;
 
     while (getline(std::cin, strOneLine))
     {
         if ((pos = strOneLine.find(";;")) != -1)
+        {
             if (!(parseLine(strOneLine, &stack, line_p)))
                 break;
+        }
+        else
+            break;
     }
 }
 
@@ -217,10 +238,10 @@ void                get_file_contents(const char *filename)
 {
     std::vector<IOperand const *>   stack;
     std::string                     strOneLine;
-    int                             line_p = 0;
+    int                             line_p = 1;
 
     std::cout << "Opening: " << filename << std::endl;
-    std::ifstream inFile(filename, std::ios::in);
+    std::ifstream inFile(filename, std::ios::in | std::ios::binary);
     if (inFile)
     {    
         while (getline(inFile, strOneLine))
